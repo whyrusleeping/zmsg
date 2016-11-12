@@ -24,8 +24,13 @@ spare ZEC in that address.
 ### sendmsg
 To send a message, use `zmsg sendmsg`:
 ```sh
-export TARGET_ZADDR=zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU
-zmsg sendmsg -to=$TARGET_ZADDR "Hello zmsg! welcome to pretty secure messaging"
+$ export TARGET_ZADDR=zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU
+$ zmsg sendmsg -to=$TARGET_ZADDR "Hello zmsg! welcome to pretty secure messaging"
+message: "Hello zmsg! welcome to pretty secure messaging"
+sending message from <your z_addr>
+sending message...
+Message sent successfuly!
+message sent! (txid = <transaction id>)
 ```
 
 Note that this will take about a minute to compute the zero-knowledge proof,
@@ -54,7 +59,7 @@ To check for messages, run `zmsg check`:
 ```
 
 ## Send me a message!
-If you're trying this out and want to say hi, send me a message at `zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU`
+If you're trying this out and want to say hi, send me a message at `zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU`.
 
 ## License
 MIT, whyrusleeping
