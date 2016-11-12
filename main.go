@@ -63,7 +63,6 @@ func readAuthCreds() (string, string, error) {
 }
 
 type Message struct {
-	From    string
 	To      string
 	Content string
 	Val     float64
@@ -172,6 +171,9 @@ func request(obj interface{}, out interface{}) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		if strings.Contains(err.Error(), "connection refused") {
+			return fmt.Errorf("failed to connect to zcash daemon, is it running?")
+		}
 		return err
 	}
 	defer resp.Body.Close()
@@ -320,7 +322,6 @@ func main() {
 			fmt.Println(div)
 			for i, m := range msgs {
 				fmt.Printf("| Message #%d (val = %f)\n", i, m.Val)
-				fmt.Printf("| From: %s\n", m.From)
 				fmt.Printf("| To: %s\n|\n", m.To)
 				fmt.Println("| ", strings.Replace(m.Content, "\n", "\n| ", -1))
 				fmt.Println(div)
@@ -371,5 +372,9 @@ func main() {
 		SendCmd,
 	}
 
-	app.RunAndExitOnError()
+	err := app.Run(os.Args)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		os.Exit(1)
+	}
 }
