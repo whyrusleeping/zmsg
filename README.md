@@ -8,8 +8,8 @@ the same time). Since the messages get stored in the blockchain, they are on
 *every* full zcash node. The implication here is that its not possible to tell
 who the target of any given message is.
 
-Currently, each message sends 0.0001 ZEC. This is hardcoded currently, but you
-can change it in the code (maybe i'll add an option to tweak this later).
+Currently, each message sends 0.0001 ZEC. You can change this value by setting
+the `--txval` flag on `sendmsg`.
 
 ## Installation
 First, make sure you have [go](https://golang.org/doc/install) installed, then:
@@ -41,16 +41,20 @@ To check for messages, run `zmsg check`:
 ================================================================================
 | Message #0 (val = 0.000010)
 | To: zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU
+| Date: 2016-11-11 17:36:31 -0800 PST
 |
 |  This is a test of zmsg, hello everyone!
 ================================================================================
 | Message #1 (val = 0.000010)
 | To: zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU
+| Date: 2016-11-11 17:44:44 -0800 PST
 |
-|  This is message number two, i'm sitting in a coffee shop. Don't tell anyone.
+|  This is message number 'two', i'm sitting in a coffee shop. Don't tell anyone.
 ================================================================================
 ```
 
+## Send me a message!
+If you're trying this out and want to say hi, send me a message at `zchfvC6iubfsAxaNrbM4kkGDSpwjafECjqQ1BZBFXtotXyXARz2NoYRVEyfLEKGCFRY7Xfj2Q3jFueoHHmQKb63C3zumYnU`
 
 ## License
 MIT, whyrusleeping

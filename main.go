@@ -12,9 +12,10 @@ import (
 )
 
 type Message struct {
-	To      string
-	Content string
-	Val     float64
+	To        string
+	Timestamp time.Time
+	Content   string
+	Val       float64
 }
 
 func getMyAddresses() ([]string, error) {
@@ -56,8 +57,8 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 	}
 
 	var msgs []*Message
-	for _, tx := range out.Result {
-		decmemo, err := hex.DecodeString(tx.Memo)
+	for _, txd := range out.Result {
+		decmemo, err := hex.DecodeString(txd.Memo)
 		if err != nil {
 			return nil, err
 		}
@@ -67,10 +68,16 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 			continue
 		}
 
+		tx, err := getTransaction(txd.Txid)
+		if err != nil {
+			return nil, err
+		}
+
 		msg := &Message{
-			Val:     tx.Amount,
-			Content: string(bytes.TrimRight(decmemo, "\x00")),
-			To:      addr,
+			Timestamp: time.Unix(tx.Time, 0),
+			Val:       txd.Amount,
+			Content:   string(bytes.TrimRight(decmemo, "\x00")),
+			To:        addr,
 		}
 
 		msgs = append(msgs, msg)
@@ -103,7 +110,7 @@ var ErrNoAddresses = fmt.Errorf("no addresses to send message from! (create one 
 
 // SendMessage sends a message to a given zcash address using a shielded transaction.
 // It returns the transaction ID.
-func SendMessage(from, to, msg string) (string, error) {
+func SendMessage(from, to, msg string, msgval float64) (string, error) {
 	if from == "" {
 		// if no from address is specified, use the first local address
 		myaddrs, err := getMyAddresses()
@@ -125,7 +132,7 @@ func SendMessage(from, to, msg string) (string, error) {
 			from, // first parameter is address to send from (where the ZEC comes from)
 			[]interface{}{
 				map[string]interface{}{
-					"amount":  0.00001,
+					"amount":  msgval,
 					"address": to,
 					"memo":    hex.EncodeToString([]byte(msg)),
 				},
@@ -177,6 +184,29 @@ func checkOperationStatus(opid string) (*opStatus, error) {
 	return out.Result[0], nil
 }
 
+type Transaction struct {
+	Time          int64
+	Confirmations int
+}
+
+func getTransaction(txid string) (*Transaction, error) {
+	req := &Request{
+		Method: "gettransaction",
+		Params: []string{txid},
+	}
+
+	var out struct {
+		Result Transaction
+	}
+
+	err := request(req, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out.Result, nil
+}
+
 // WaitForOperation polls the operations status until it either fails or
 // succeeds.
 func WaitForOperation(opid string) (string, error) {
@@ -225,7 +255,8 @@ var CheckCmd = cli.Command{
 		fmt.Println(div)
 		for i, m := range msgs {
 			fmt.Printf("| Message #%d (val = %f)\n", i, m.Val)
-			fmt.Printf("| To: %s\n|\n", m.To)
+			fmt.Printf("| To: %s\n", m.To)
+			fmt.Printf("| Date: %s\n|\n", m.Timestamp)
 			fmt.Println("| ", strings.Replace(m.Content, "\n", "\n| ", -1))
 			fmt.Println(div)
 		}
@@ -246,6 +277,11 @@ var SendCmd = cli.Command{
 			Name:  "to",
 			Usage: "address to send message to",
 		},
+		cli.Float64Flag{
+			Name:  "txval",
+			Value: 0.00001,
+			Usage: "specify the amount of ZEC to send with messages.",
+		},
 	},
 	Action: func(c *cli.Context) error {
 		to := c.String("to")
@@ -261,7 +297,7 @@ var SendCmd = cli.Command{
 		}
 		fmt.Printf("message: %q\n", msg)
 
-		txid, err := SendMessage(from, to, msg)
+		txid, err := SendMessage(from, to, msg, c.Float64("txval"))
 		if err != nil {
 			return err
 		}
