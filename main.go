@@ -113,9 +113,19 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 			return nil, err
 		}
 
+		if decmemo[0] != 0xf5 {
+			// message isnt valid 'third party zcash memo field application'
+			continue
+		}
+		if decmemo[1] != 0xa0 {
+			// 0xa0 is the prefix we're using for 'ascii', and to signal
+			// that this is a zmsg communication
+			continue
+		}
+
 		msg := &Message{
 			Val:     tx.Amount,
-			Content: string(bytes.TrimRight(decmemo, "\x00")),
+			Content: string(bytes.TrimRight(decmemo[2:], "\x00")),
 			To:      addr,
 		}
 
@@ -196,6 +206,11 @@ func sendMessage(from, to, msg string) (string, error) {
 		fmt.Printf("sending message from %s\n", from)
 	}
 
+	buf := make([]byte, 2+len(msg))
+	buf[0] = 0xf5 // zcash memo field 'third party application' code
+	buf[1] = 0xa0 // multicodec packed value for 'ascii'
+	copy(buf[2:], msg)
+
 	req := map[string]interface{}{
 		"method": "z_sendmany",
 		"params": []interface{}{
@@ -204,7 +219,7 @@ func sendMessage(from, to, msg string) (string, error) {
 				map[string]interface{}{
 					"amount":  0.00001,
 					"address": to,
-					"memo":    hex.EncodeToString([]byte(msg)),
+					"memo":    hex.EncodeToString(buf),
 				},
 			},
 		},
