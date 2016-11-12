@@ -3,12 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -146,45 +142,6 @@ func checkMessages() ([]*Message, error) {
 	return allmsgs, nil
 }
 
-func request(obj interface{}, out interface{}) error {
-	data, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-
-	body := bytes.NewReader(data)
-
-	req, err := http.NewRequest("POST", "http://localhost:8232/", body)
-	if err != nil {
-		return err
-	}
-
-	// auth auth baby
-	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") {
-			return fmt.Errorf("failed to connect to zcash daemon, is it running?")
-		}
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println("error reading http body: ", err)
-		}
-
-		fmt.Println("Error from rpc server: ", string(data))
-
-		return fmt.Errorf("http %d: %s", resp.StatusCode, resp.Status)
-	}
-
-	return json.NewDecoder(resp.Body).Decode(out)
-}
-
 func sendMessage(from, to, msg string) (string, error) {
 	// {"method":"z_sendmany","params":["",[{"amount":0.00100000,"address":"","memo":""}]],"id":1}
 	if from == "" {
@@ -201,11 +158,6 @@ func sendMessage(from, to, msg string) (string, error) {
 		fmt.Printf("sending message from %s\n", from)
 	}
 
-	bmsg := []byte(msg)
-	if len(bmsg) > 512 {
-		return "", fmt.Errorf("message cannot be longer than 512 bytes")
-	}
-
 	req := map[string]interface{}{
 		"method": "z_sendmany",
 		"params": []interface{}{
@@ -214,7 +166,7 @@ func sendMessage(from, to, msg string) (string, error) {
 				map[string]interface{}{
 					"amount":  0.00001,
 					"address": to,
-					"memo":    hex.EncodeToString(bmsg),
+					"memo":    hex.EncodeToString([]byte(msg)),
 				},
 			},
 		},
