@@ -10,16 +10,25 @@ import (
 )
 
 type Error struct {
-	Code    int
-	Message string
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("error %d: %s", e.Code, e.Message)
 }
 
 type Response struct {
-	Result interface{}
-	Error  Error
+	Result interface{} `json:"result"`
+	Error  Error       `json:"error"`
 }
 
-func request(obj interface{}, out interface{}) error {
+type Request struct {
+	Method string      `json:"method"`
+	Params interface{} `json:"params"`
+}
+
+func request(obj *Request, out interface{}) error {
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -51,7 +60,7 @@ func request(obj interface{}, out interface{}) error {
 			fmt.Println("error reading http body: ", err)
 		}
 
-		return fmt.Errorf(res.Error.Message)
+		return res.Error
 	}
 
 	return json.NewDecoder(resp.Body).Decode(out)
