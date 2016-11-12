@@ -234,12 +234,12 @@ func sendMessage(from, to, msg string) (string, error) {
 	}
 
 	opid := out.Result
-	err = waitForOperation(opid)
+	txid, err := waitForOperation(opid)
 	if err != nil {
 		return "", err
 	}
 
-	return opid, nil
+	return txid, nil
 }
 
 type opStatus struct {
@@ -249,6 +249,9 @@ type opStatus struct {
 	Error        struct {
 		Code    int
 		Message string
+	}
+	Result struct {
+		Txid string
 	}
 }
 
@@ -269,34 +272,35 @@ func checkOperationStatus(opid string) (*opStatus, error) {
 	return out.Result[0], nil
 }
 
-func waitForOperation(opid string) error {
+func waitForOperation(opid string) (string, error) {
 	i := 0
 	for range time.Tick(time.Second) {
 		status, err := checkOperationStatus(opid)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		switch status.Status {
 		case "failed":
 			fmt.Println("operation failed!")
 			fmt.Println("reason: ", status.Error.Message)
-			return fmt.Errorf(status.Error.Message)
+			return "", fmt.Errorf(status.Error.Message)
 		case "executing":
 			// in progress, print a progress thingy?
-			fmt.Printf("\r                      ")
+			fmt.Printf("\r                      \r")
 			fmt.Print("sending message")
 			for j := 0; j <= (i % 4); j++ {
 				fmt.Print(".")
 			}
 		case "success":
 			fmt.Println("\nMessage sent successfuly!")
-			return nil
+			return status.Result.Txid, nil
 		default:
 			fmt.Printf("%#v\n", status)
 		}
+		i++
 	}
-	return nil
+	return "", nil
 }
 
 func main() {
@@ -310,13 +314,16 @@ func main() {
 				return err
 			}
 
-			for _, m := range msgs {
-				fmt.Println("==========================================")
-				fmt.Printf("Message (val = %f)\n", m.Val)
-				fmt.Printf("From: %s\n", m.From)
-				fmt.Printf("To: %s\n", m.To)
-				fmt.Println(m.Content)
-				fmt.Println("==========================================")
+			div := strings.Repeat("=", 80)
+			fmt.Println(div)
+			fmt.Printf("> Got %d messages.\n", len(msgs))
+			fmt.Println(div)
+			for i, m := range msgs {
+				fmt.Printf("| Message #%d (val = %f)\n", i, m.Val)
+				fmt.Printf("| From: %s\n", m.From)
+				fmt.Printf("| To: %s\n|\n", m.To)
+				fmt.Println("| ", strings.Replace(m.Content, "\n", "\n| ", -1))
+				fmt.Println(div)
 			}
 
 			return nil
