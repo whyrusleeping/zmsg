@@ -63,8 +63,8 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 			return nil, err
 		}
 
-		if decmemo[0] > 0xf7 {
-			fmt.Println("warning: incorrectly formatted message received (b[0] > 0xf7)")
+		if decmemo[0] > 0xf4 {
+			fmt.Println("warning: incorrectly formatted message received (b[0] > 0xf4)")
 			continue
 		}
 
