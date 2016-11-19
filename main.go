@@ -85,7 +85,7 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 			continue
 		default:
 			if Verbose {
-				fmt.Println(" == warning: memo contained data marked with future protocol extension codes")
+				fmt.Printf(" == warning: memo contained data marked with future protocol extension codes (%d)\n", decmemo[0])
 			}
 			continue
 		case decmemo[0] == 0xf5:
