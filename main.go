@@ -285,7 +285,14 @@ func WaitForOperation(opid string) (string, error) {
 var CheckCmd = cli.Command{
 	Name:  "check",
 	Usage: "check for messages.",
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "verbose",
+			Usage: "enable verbose log output",
+		},
+	},
 	Action: func(c *cli.Context) error {
+		Verbose = c.Bool("verbose")
 		msgs, err := CheckMessages()
 		if err != nil {
 			return err
