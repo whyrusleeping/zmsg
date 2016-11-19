@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 
 	cli "github.com/urfave/cli"
 )
+
+var Verbose = false
 
 type Message struct {
 	To        string
@@ -40,6 +43,16 @@ type TxDesc struct {
 	Memo   string
 }
 
+func parseTypedData(d []byte) (uint64, []byte, error) {
+	mtyp, n1 := binary.Uvarint(d)
+	mlen, n2 := binary.Uvarint(d[n1:])
+	if 1+n1+n2+int(mlen) > 512 {
+		return 0, nil, fmt.Errorf("specified message length exceeded limit")
+	}
+
+	return mtyp, d[n1+n2 : n1+n2+int(mlen)], nil
+}
+
 // getReceivedForAddr returns all received messages for a given address
 func getReceivedForAddr(addr string) ([]*Message, error) {
 	req := &Request{
@@ -63,9 +76,38 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 			return nil, err
 		}
 
-		if decmemo[0] > 0xf4 {
-			fmt.Println("warning: incorrectly formatted message received (b[0] > 0xf4)")
+		var content string
+		switch {
+		case decmemo[0] == 0xff:
+			if Verbose {
+				fmt.Println(" == warning: memo contained unformatted data")
+			}
 			continue
+		default:
+			if Verbose {
+				fmt.Println(" == warning: memo contained data marked with future protocol extension codes")
+			}
+			continue
+		case decmemo[0] == 0xf5:
+			// typed length prefixed data
+			mtyp, buf, err := parseTypedData(decmemo[1:])
+			if err != nil {
+				return nil, err
+			}
+
+			// 0xa0 == ascii type flag
+			if mtyp != 0xa0 {
+				if Verbose {
+					fmt.Println(" == warning: can only handle type of 'ascii' (0xa0)")
+				}
+				continue
+			}
+
+			content = string(buf)
+
+		case decmemo[0] <= 0xf4:
+			// acceptable, utf encoded text
+			content = string(bytes.TrimRight(decmemo, "\x00"))
 		}
 
 		tx, err := getTransaction(txd.Txid)
@@ -76,7 +118,7 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 		msg := &Message{
 			Timestamp: time.Unix(tx.Time, 0),
 			Val:       txd.Amount,
-			Content:   string(bytes.TrimRight(decmemo, "\x00")),
+			Content:   content,
 			To:        addr,
 		}
 
