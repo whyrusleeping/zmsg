@@ -10,6 +10,7 @@ import (
 	"time"
 
 	cli "github.com/urfave/cli"
+	rpc "github.com/whyrusleeping/zmsg/rpc"
 )
 
 var Verbose = false
@@ -22,14 +23,14 @@ type Message struct {
 }
 
 func getMyAddresses() ([]string, error) {
-	req := &Request{
+	req := &rpc.Request{
 		Method: "z_listaddresses",
 	}
 
 	var out struct {
 		Result []string
 	}
-	err := request(req, &out)
+	err := rpc.Do(req, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func parseTypedData(d []byte) (uint64, []byte, error) {
 
 // getReceivedForAddr returns all received messages for a given address
 func getReceivedForAddr(addr string) ([]*Message, error) {
-	req := &Request{
+	req := &rpc.Request{
 		Method: "z_listreceivedbyaddress",
 		Params: []string{addr},
 	}
@@ -64,7 +65,7 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 		Result []*TxDesc
 	}
 
-	err := request(req, &out)
+	err := rpc.Do(req, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func SendMessage(from, to, msg string, msgval float64) (string, error) {
 		fmt.Printf("sending message from %s\n", from)
 	}
 
-	req := &Request{
+	req := &rpc.Request{
 		Method: "z_sendmany",
 		Params: []interface{}{
 			from, // first parameter is address to send from (where the ZEC comes from)
@@ -185,7 +186,7 @@ func SendMessage(from, to, msg string, msgval float64) (string, error) {
 	var out struct {
 		Result string
 	}
-	err := request(req, &out)
+	err := rpc.Do(req, &out)
 	if err != nil {
 		return "", err
 	}
@@ -203,14 +204,14 @@ type opStatus struct {
 	Id           string
 	Status       string
 	CreationTime uint64 `json:"creation_time"`
-	Error        Error
+	Error        rpc.Error
 	Result       struct {
 		Txid string
 	}
 }
 
 func checkOperationStatus(opid string) (*opStatus, error) {
-	req := &Request{
+	req := &rpc.Request{
 		Method: "z_getoperationstatus",
 		Params: []interface{}{[]string{opid}},
 	}
@@ -218,7 +219,7 @@ func checkOperationStatus(opid string) (*opStatus, error) {
 	var out struct {
 		Result []*opStatus
 	}
-	err := request(req, &out)
+	err := rpc.Do(req, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +233,7 @@ type Transaction struct {
 }
 
 func getTransaction(txid string) (*Transaction, error) {
-	req := &Request{
+	req := &rpc.Request{
 		Method: "gettransaction",
 		Params: []string{txid},
 	}
@@ -241,7 +242,7 @@ func getTransaction(txid string) (*Transaction, error) {
 		Result Transaction
 	}
 
-	err := request(req, &out)
+	err := rpc.Do(req, &out)
 	if err != nil {
 		return nil, err
 	}

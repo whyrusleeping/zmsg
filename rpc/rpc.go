@@ -1,4 +1,4 @@
-package main
+package rpc
 
 import (
 	"bytes"
@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"strings"
 )
+
+var DefaultUser string
+var DefaultPass string
 
 type Error struct {
 	Code    int    `json:"code"`
@@ -28,7 +31,7 @@ type Request struct {
 	Params interface{} `json:"params"`
 }
 
-func request(obj *Request, out interface{}) error {
+func Do(obj *Request, out interface{}) error {
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -42,7 +45,7 @@ func request(obj *Request, out interface{}) error {
 	}
 
 	// auth auth baby
-	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
+	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(DefaultUser+":"+DefaultPass)))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

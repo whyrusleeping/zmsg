@@ -6,10 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-)
 
-var username string
-var password string
+	rpc "github.com/whyrusleeping/zmsg/rpc"
+)
 
 func init() {
 	u, p, err := readAuthCreds()
@@ -17,8 +16,8 @@ func init() {
 		fmt.Println("Error reading zcash config: ", err)
 	}
 
-	username = u
-	password = p
+	rpc.DefaultUser = u
+	rpc.DefaultPass = p
 }
 
 func readAuthCreds() (string, string, error) {
