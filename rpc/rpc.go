@@ -23,7 +23,7 @@ func (e Error) Error() string {
 
 type Response struct {
 	Result interface{} `json:"result"`
-	Error  Error       `json:"error"`
+	Error  *Error      `json:"error"`
 }
 
 type Request struct {
@@ -31,7 +31,21 @@ type Request struct {
 	Params interface{} `json:"params"`
 }
 
+type Client struct {
+	Host string
+	User string
+	Pass string
+}
+
+var DefaultClient = &Client{
+	Host: "http://localhost:8232",
+}
+
 func Do(obj *Request, out interface{}) error {
+	return DefaultClient.Do(obj, out)
+}
+
+func (c *Client) Do(obj *Request, out interface{}) error {
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -39,13 +53,15 @@ func Do(obj *Request, out interface{}) error {
 
 	body := bytes.NewReader(data)
 
-	req, err := http.NewRequest("POST", "http://localhost:8232/", body)
+	req, err := http.NewRequest("POST", c.Host, body)
 	if err != nil {
 		return err
 	}
 
 	// auth auth baby
-	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(DefaultUser+":"+DefaultPass)))
+	if c.User != "" {
+		req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.User+":"+c.Pass)))
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

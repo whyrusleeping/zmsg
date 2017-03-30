@@ -16,8 +16,8 @@ func init() {
 		fmt.Println("Error reading zcash config: ", err)
 	}
 
-	rpc.DefaultUser = u
-	rpc.DefaultPass = p
+	rpc.DefaultClient.User = u
+	rpc.DefaultClient.Pass = p
 }
 
 func readAuthCreds() (string, string, error) {

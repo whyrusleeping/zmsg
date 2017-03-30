@@ -55,11 +55,17 @@ func parseTypedData(d []byte) (uint64, []byte, error) {
 }
 
 // getReceivedForAddr returns all received messages for a given address
-func getReceivedForAddr(addr string) ([]*Message, error) {
+func getReceivedForAddr(addr string, noconf bool) ([]*Message, error) {
 	req := &rpc.Request{
 		Method: "z_listreceivedbyaddress",
-		Params: []string{addr},
 	}
+
+	params := []interface{}{addr}
+	if noconf {
+		params = append(params, 0)
+	}
+
+	req.Params = params
 
 	var out struct {
 		Result []*TxDesc
@@ -130,7 +136,7 @@ func getReceivedForAddr(addr string) ([]*Message, error) {
 }
 
 // CheckMessages returns all messages that the local zcash daemon has received
-func CheckMessages() ([]*Message, error) {
+func CheckMessages(noconf bool) ([]*Message, error) {
 	addrs, err := getMyAddresses()
 	if err != nil {
 		return nil, err
@@ -138,7 +144,7 @@ func CheckMessages() ([]*Message, error) {
 
 	var allmsgs []*Message
 	for _, myaddr := range addrs {
-		msgs, err := getReceivedForAddr(myaddr)
+		msgs, err := getReceivedForAddr(myaddr, noconf)
 		if err != nil {
 			return nil, err
 		}
@@ -291,10 +297,14 @@ var CheckCmd = cli.Command{
 			Name:  "verbose",
 			Usage: "enable verbose log output",
 		},
+		cli.BoolFlag{
+			Name:  "noconf",
+			Usage: "show messages with no transaction confirmations",
+		},
 	},
 	Action: func(c *cli.Context) error {
 		Verbose = c.Bool("verbose")
-		msgs, err := CheckMessages()
+		msgs, err := CheckMessages(c.Bool("noconf"))
 		if err != nil {
 			return err
 		}
